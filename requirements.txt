@@ -1,0 +1,20 @@
+# Hachimi Sonata · 哈基米音律工坊 运行依赖
+# 安装：pip install -r requirements.txt
+# 若 pyworld 在 Windows 上编译失败，可改用 conda：
+#   conda install -c conda-forge pyworld
+
+numpy>=1.23,<3
+scipy>=1.9
+soundfile>=0.12
+pyworld>=0.3.4
+pretty_midi>=0.2.10
+mido>=1.2
+tqdm>=4.60
+fastapi>=0.100
+uvicorn>=0.23
+matplotlib>=3.5
+networkx>=2.8
+Pillow>=9.0
+
+# 可选：GPU 混音加速（CUDA 版 PyTorch，不装则自动使用 CPU）
+# pip install torch --index-url https://download.pytorch.org/whl/cu124

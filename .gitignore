@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+.vscode/
+!.vscode/settings.json
+
+/output/
+/assets/
+/cache/
+/uploads/
+/tmp/
+/dist/
+*.lnk
+*.log
+/新建 文本文档.txt

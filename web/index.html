@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Hachimi Sonata · 哈基米音律工坊：MIDI / MusicXML 生成哈基米歌声、完整速度地图、力度与奏法、调性与段落编曲分析、实时字幕">
+<title>Hachimi Sonata · 哈基米音律工坊</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css?v=0.22.0">
+</head>
+<body>
+<div class="bg-orb orb-a"></div>
+<div class="bg-orb orb-b"></div>
+<div class="bg-orb orb-c"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">哈</div>
+    <div>
+      <h1>Hachimi Sonata</h1>
+      <p>哈基米音律工坊 · MIDI / 乐谱 → 哈基米歌声 · 完整速度地图 · 力度与奏法 · 每段编曲 · 实时字幕</p>
+    </div>
+  </div>
+  <div class="top-status">
+    <button id="helpBtn" class="ghost-btn">使用说明</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- 左栏：导入 + 最近作品 + 轨道 -->
+  <section class="col main-col">
+    <div class="card drop-card" id="dropCard">
+      <input type="file" id="fileInput" accept=".mid,.midi,.kar,.rmi,.xml,.musicxml,.mxl" hidden>
+      <div class="drop-inner">
+        <div class="drop-icon">♪</div>
+        <h2>拖拽 MIDI 或乐谱到这里</h2>
+        <p>或 <button class="link-btn" id="browseBtn">点击选择文件</button> · 支持 .mid / .midi / .kar / .rmi / .xml / .musicxml / .mxl</p>
+        <div class="drop-actions">
+          <button class="ghost-btn" id="localBtn">从项目曲库选择</button>
+          <span class="hint" id="uploadHint">文件不会离开本机，渲染全部在本地完成</span>
+        </div>
+      </div>
+      <div class="drop-progress" id="dropProgress" hidden><div></div></div>
+    </div>
+
+    <div class="card subtitle-style-card" id="subtitleStyleCard">
+      <div class="card-head">
+        <div>
+          <h2>字幕视频样式</h2>
+          <p class="muted">默认 8 号白色宋体 + 轻微黑边；宽度固定 1920，单条视频包含全部字幕，每次最多 1 行</p>
+        </div>
+      </div>
+      <div class="subtitle-style-grid">
+        <div class="field">
+          <label for="subtitleFontSize">字号 <span class="muted" id="subtitleFontSizeOut">8 号 · 80 px · 轻微黑边</span></label>
+          <input type="range" id="subtitleFontSize" min="4" max="30" step="1" value="8">
+        </div>
+        <div class="field">
+          <label for="subtitleFontFamily">字体</label>
+          <select id="subtitleFontFamily">
+            <option value="SimSun" selected>宋体（SimSun）</option>
+            <option value="Microsoft YaHei">微软雅黑</option>
+            <option value="SimHei">黑体</option>
+            <option value="Noto Sans SC">Noto Sans SC</option>
+            <option value="DengXian">等线</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="subtitleTextColor">文字颜色</label>
+          <input type="color" id="subtitleTextColor" value="#FFFFFF">
+        </div>
+      </div>
+      <p class="muted small">1 号 ≈ 10 px（按 1920 宽换算）；8 号 ≈ 80 px，默认带 2 px 轻微黑边。仅影响绿幕字幕视频，不影响音频与 SRT。</p>
+    </div>
+
+    <details class="card params-card" id="paramsCard">
+      <summary class="library-summary">
+        <span class="library-title">
+          工程参数复用
+          <span class="library-count" id="paramsCount">0</span>
+        </span>
+        <span class="library-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="params-body">
+        <p class="muted small">每次生成都会自动保存完整参数包。导入旧工程的 <code>_params.zip</code> / <code>_params.json</code>，可一键复制它的全局设置、轨道语音 / 八度 / 音量、段落编曲与字幕样式。</p>
+        <div class="params-row">
+          <select id="paramsSelect"><option value="">加载中…</option></select>
+          <button class="ghost-btn" id="paramsApply" type="button">读取并套用</button>
+          <button class="ghost-btn tiny" id="paramsRefresh" type="button">刷新</button>
+        </div>
+        <div class="params-row">
+          <button class="ghost-btn" id="paramsImportBtn" type="button">导入参数包 ZIP / JSON</button>
+          <input type="file" id="paramsFile" accept=".zip,.json" hidden>
+          <span class="muted small" id="paramsHint">尚未选择参数包</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="card library-card" id="libraryCard">
+      <summary class="library-summary">
+        <span class="library-title">
+          最近作品
+          <span class="library-count" id="libraryCount">0</span>
+        </span>
+        <span class="library-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="library-body">
+        <div class="library-toolbar">
+          <span class="muted small">点击可展开；试听 / 下载不会离开本机</span>
+          <button class="ghost-btn tiny" id="refreshLibrary" type="button">刷新</button>
+        </div>
+        <div class="library-list" id="libraryList"><p class="muted small">加载中…</p></div>
+      </div>
+    </details>
+
+    <div class="card" id="fileCard" hidden>
+      <div class="card-head">
+        <div>
+          <h2 id="fileName">—</h2>
+          <p class="muted" id="fileMeta">—</p>
+        </div>
+        <button class="ghost-btn" id="changeFileBtn">更换文件</button>
+      </div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="overview-wrap">
+        <canvas id="overviewCanvas" height="150"></canvas>
+        <div class="overview-legend"><span class="dot pitch"></span>音高轮廓 <span class="dot density"></span>音符密度 <span class="dot section"></span>段落</div>
+      </div>
+      <div class="tempo-map" id="tempoMap" hidden>
+        <div class="tempo-map-title">速度地图 <span class="muted small" id="tempoHint"></span></div>
+        <div class="tempo-list" id="tempoList"></div>
+        <details class="tempo-details" id="tempoDetails" open>
+          <summary>速度变化明细 <span class="muted small" id="tempoDetailHint"></span></summary>
+          <div class="tempo-table-wrap">
+            <table class="tempo-table">
+              <thead>
+                <tr><th>#</th><th>时间</th><th>BPM</th><th>谱面标记</th></tr>
+              </thead>
+              <tbody id="tempoDetailBody"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="card" id="trackCard" hidden>
+      <div class="card-head">
+        <div>
+          <h2>轨道与乐器</h2>
+          <p class="muted">勾选参与生成的轨道；语音默认「自动混合」（哈基米主 + 叮咚鸡/曼巴/曼波辅）；低音声部默认不勾选，可手动勾选</p>
+        </div>
+        <div class="row-actions">
+          <button class="ghost-btn" id="selectMelody">仅旋律</button>
+          <button class="ghost-btn" id="selectAll">全选</button>
+          <button class="ghost-btn" id="selectNone">全不选</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="track-table">
+          <thead>
+            <tr>
+              <th class="c-check">参与</th>
+              <th class="c-idx">#</th>
+              <th>轨道 / 乐器</th>
+              <th>角色</th>
+              <th class="c-num">音符</th>
+              <th class="c-vel">力度</th>
+              <th>语音模式</th>
+              <th class="c-oct">八度</th>
+              <th class="c-gain">音量</th>
+            </tr>
+          </thead>
+          <tbody id="trackBody"></tbody>
+        </table>
+      </div>
+      <p class="muted small" id="trackSummary"></p>
+    </div>
+
+    <div class="card" id="analysisCard" hidden>
+      <div class="card-head">
+        <div>
+          <h2>音乐分析</h2>
+          <p class="muted">调性 · 和弦级数 · 段落结构 · 乐句 · 重复动机（同一动机将复用同一句歌词）</p>
+        </div>
+        <div class="tabs" id="analysisTabs">
+          <button class="tab active" data-tab="chords">和弦</button>
+          <button class="tab" data-tab="sections">结构</button>
+          <button class="tab" data-tab="motifs">动机</button>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-chords">
+        <div class="chord-strip" id="chordStrip"></div>
+        <p class="muted small" id="chordInfo"></p>
+      </div>
+      <div class="tab-panel" id="tab-sections" hidden>
+        <div class="section-strip" id="sectionStrip"></div>
+        <div class="section-list" id="sectionList"></div>
+        <div class="phrase-title">乐句（自动按休止 / 4 小节超周期切分）</div>
+        <div class="phrase-list" id="phraseList"></div>
+      </div>
+      <div class="tab-panel" id="tab-motifs" hidden>
+        <div class="motif-list" id="motifList"></div>
+      </div>
+    </div>
+
+    <div class="card" id="arrangementCard" hidden>
+      <div class="card-head">
+        <div>
+          <h2>段落编曲 · 每段独立</h2>
+          <p class="muted">默认 70% 马尔科夫链；自动段会明显拉开段间比例与音源配比。可逐段修改比例、随机种子与音源配比</p>
+        </div>
+        <div class="row-actions">
+          <button class="ghost-btn" id="resetSectionPlans" type="button">按全局比例重建</button>
+        </div>
+      </div>
+      <div class="section-plan-legend">
+        <span><b>马尔科夫</b> 0~100%，越高越随机、越断续；越低越接近标准句法</span>
+        <span><b>随机种子</b> 每段独立，决定该段句式与采样走向</span>
+        <span><b>音源配比</b> 四项会自动归一化；自动段会主动换色，哈基米仍保持主导</span>
+      </div>
+      <div class="section-plan-list" id="sectionPlanList"></div>
+      <p class="muted small" id="sectionPlanHint">导入 MIDI 后，会按段落能量 / 调性自动生成一套计划。</p>
+    </div>
+
+  </section>
+
+  <!-- 右栏：参数 + 进度 + 结果 -->
+  <aside class="col side-col">
+    <div class="card sticky" id="optionsCard">
+      <div class="card-head"><h2>生成设置</h2></div>
+      <div class="field">
+        <label for="modelSelect">歌词模型</label>
+        <select id="modelSelect"></select>
+      </div>
+      <div class="field">
+        <label for="globalVoice">默认语音模式</label>
+        <select id="globalVoice"></select>
+      </div>
+      <div class="field">
+        <label for="sampleSet">哈基米音源</label>
+        <select id="sampleSet">
+          <option value="1">第一套（音源/哈基米）</option>
+          <option value="2">第二套（音源/哈基米第二版）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>本地音源目录 <button class="ghost-btn" id="refreshSamples" type="button">刷新</button></label>
+        <p class="muted small" id="sourceDir" style="word-break:break-all">音源\</p>
+        <p class="muted small">替换或修改 音源 目录里的 wav 后，点「刷新」或直接重新生成即可生效</p>
+      </div>
+      <div class="field">
+        <label for="syntaxInput">全局句法基线 <span class="muted" id="syntaxVal">30%</span> / 马尔科夫 <span class="muted" id="markovVal">70%</span></label>
+        <input type="range" id="syntaxInput" min="0" max="1" step="0.05" value="0.3">
+        <p class="muted small">自动生成段落计划时的基线；每段可在下方单独调整。主题动机与长音始终使用标准句法</p>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="gpuMode">GPU 加速</label>
+          <select id="gpuMode">
+            <option value="auto">自动</option>
+            <option value="on">强制开启</option>
+            <option value="off">关闭</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gpuMemory">显存预算</label>
+          <select id="gpuMemory">
+            <option value="1024">1 GB</option>
+            <option value="2048" selected>2 GB</option>
+            <option value="3072">3 GB</option>
+          </select>
+        </div>
+      </div>
+      <p class="muted small" id="gpuHint">GPU 仅用于批量混音落位，不会占满 8G 显存</p>
+      <div class="field-grid">
+        <div class="field">
+          <label for="gammaInput">力度曲线 <span class="muted" id="gammaVal">1.6</span></label>
+          <input type="range" id="gammaInput" min="0.5" max="3" step="0.1" value="1.6">
+        </div>
+        <div class="field">
+          <label for="workersInput">渲染进程</label>
+          <input type="number" id="workersInput" min="0" max="16" step="1" value="0" title="0 = 自动">
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="maxSeconds">试听时长（秒）</label>
+          <input type="number" id="maxSeconds" min="0" step="5" placeholder="留空 = 完整">
+        </div>
+        <div class="field">
+          <label for="seedInput">随机种子</label>
+          <input type="number" id="seedInput" value="1337" step="1">
+        </div>
+      </div>
+      <label class="switch-row"><input type="checkbox" id="decomposedInput" checked> 分解和弦共用歌词</label>
+      <label class="switch-row"><input type="checkbox" id="autoMixInput" checked> 自动混音（真实乐器摆位 / 相位对齐 / 自动电平 / 3.4:1 动态压缩）</label>
+      <label class="switch-row"><input type="checkbox" id="stemsInput" checked> 每轨单独输出混音后 MP3（声像 / 深度 / 自动电平）</label>
+      <label class="switch-row"><input type="checkbox" id="premixInput" checked> 混音前干声 FLAC + ZIP（可重新混音）</label>
+      <label class="switch-row"><input type="checkbox" id="badNotesInput" checked> 导出不良音符 MIDI（每轨 + 补充 MIDI：不良音 → 空白 → 全谱）</label>
+      <label class="switch-row"><input type="checkbox" id="zipInput" checked> 打包 ZIP（含分轨、混音前干声、参数包、乐器清单与字幕）</label>
+      <label class="switch-row"><input type="checkbox" id="videosInput" checked> 绿幕字幕视频（单条包含全部字幕 · 每次 1 行 · 宽 1920 · 样式在左侧）</label>
+      <div class="field">
+        <label for="downloadMode">生成完成后自动下载</label>
+        <select id="downloadMode">
+          <option value="all">全部（ZIP + MP3 + 字幕）</option>
+          <option value="zip">仅 ZIP 包</option>
+          <option value="off">关闭，仅显示下载按钮</option>
+        </select>
+      </div>
+
+      <button class="primary-btn" id="renderBtn" disabled>开始生成</button>
+      <button class="ghost-btn danger" id="cancelBtn" hidden>取消任务</button>
+
+      <div class="progress-box" id="progressBox" hidden>
+        <div class="progress-top"><span id="stageText">准备中…</span><span id="pctText">0%</span></div>
+        <div class="progress-track"><div id="progressBar"></div></div>
+        <div class="mini-log" id="miniLog"></div>
+      </div>
+    </div>
+
+    <div class="card" id="subtitleCard" hidden>
+      <div class="card-head">
+        <div><h2>实时字幕</h2><p class="muted" id="subtitleMeta">歌词生成后立即显示</p></div>
+      </div>
+      <div class="now-line" id="nowLine">♪</div>
+      <div class="subtitle-list" id="subtitleList"></div>
+    </div>
+
+    <div class="card" id="resultCard" hidden>
+      <div class="card-head">
+        <div><h2>生成完成</h2><p class="muted" id="resultMeta"></p></div>
+      </div>
+      <div class="verify-box" id="verifyBox" hidden></div>
+      <div class="verify-box" id="qualityBox" hidden></div>
+      <audio id="audioPlayer" controls preload="metadata"></audio>
+      <div class="download-grid" id="downloadGrid"></div>
+      <div class="stat-grid compact" id="resultStats"></div>
+    </div>
+  </aside>
+</main>
+
+<!-- 项目曲库选择弹窗 -->
+<div class="modal" id="localModal" hidden>
+  <div class="modal-card">
+    <div class="card-head">
+      <h2>项目曲库（MIDI / MusicXML）</h2>
+      <button class="ghost-btn" id="closeLocal">关闭</button>
+    </div>
+    <input class="modal-search" id="localSearch" placeholder="搜索文件名…">
+    <div class="local-list" id="localList"></div>
+  </div>
+</div>
+
+<!-- 帮助弹窗 -->
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-card help">
+    <div class="card-head">
+      <h2>使用说明</h2>
+      <button class="ghost-btn" id="closeHelp">关闭</button>
+    </div>
+    <ol class="help-list">
+      <li><b>导入</b>：拖拽 MIDI 或 MusicXML（.xml / .musicxml / .mxl），或从项目曲库选择。分析会列出每条轨道的乐器、角色、音符数、最高音、力度与速度地图。</li>
+      <li><b>勾选轨道</b>：鼓轨默认静音；最高音过低的轨道会标为「低音声部」，默认不勾选且音量降低，仍可手动勾选。可逐轨设置语音模式、八度与音量；小提琴默认音量 1.50。</li>
+      <li><b>音乐分析</b>：自动判断全曲 / 各段调性（Krumhansl 轮廓）、罗马数字和弦级数、段落重复关系和乐句 A1/A2；「结构」页可查看每段调性、进行与句数。</li>
+      <li><b>段落编曲</b>：每个段落可独立设置马尔科夫比例（默认 70%）、随机种子和哈基米 / 叮咚鸡 / 曼巴 / 曼波音源配比。哈基米默认绝对主导，叮咚鸡为主要辅助；可按全局比例重建，也可逐段手改。</li>
+      <li><b>语音模式</b>：<b>自动混合</b>以哈基米为主，叮咚鸡 / 曼巴 / 曼波用于对位与伴奏；可切换第一套 / 第二套哈基米音源。所有声库共用同一套音高 / 时值 / 软起音 / 辅音衰减 / 连奏 / 混音链路，音源只决定取样；基 / 库等爆破音音头已进一步柔化。</li>
+      <li><b>歌词规则</b>：同一个动机（主题）重复出现时复用同一句歌词；不同声部构成同一个分解和弦时共用同一个字；力度按 MIDI velocity 或乐谱力度精确映射音量，并按相邻音力度自动做渐强 / 渐弱。</li>
+      <li><b>音源与响度</b>：音源先做强压缩 + 补偿，统一到稳定响度；齿音 / 清辅音先分析并降低；高音 / 低音自动做频段可听度补偿，保证高音不“消失”。</li>
+      <li><b>辅音 / 爆破音</b>：所有音节的辅音区统一压低；基、库、叮、咚等爆破音字的最初约 22 ms 再大幅削减，随后平滑回到元音，避免“啪”的爆音，字头仍然可辨。</li>
+      <li><b>弱化音头 / 连奏</b>：每个音起音使用 14 ms 软包络，削掉“啪”的瞬态但保留字头；同一轨连续单声部音间隔 ≤160 ms 时，前音尾巴延伸进后音起音，后音用 30 ms 柔起音，模拟真实乐器的换弓 / 换气过渡。</li>
+      <li><b>分轨 / 混音前干声</b>：每条参与混音的轨道自动导出混音后 MP3（已做声像、深度、自动电平）；另自动导出混音前 FLAC 干声并统一打包成 ZIP，方便重新混音。两者都写入总 ZIP。</li>
+      <li><b>不良音符 MIDI</b>：按实际发声音高检查 C2~C6 范围与轨道内相对音域，并结合力度 / 渐弱判断是否真的音量过低；谱面 p / pp / mp 等力度记号不会被误判。每条有问题的轨道会额外导出一个只含不良音符、删除全部合格音符的 MIDI；另导出 <code>*_bad_and_all.mid</code>：先是不良音轨（<code>violin1_NG</code>），中间一条空白分隔轨，最后是谱面全部轨道（<code>violin1</code>），所有 MIDI 轨名均为英文且不与音频文件重名。未参与音频合成的轨道名追加 <code>_NOAUDIO</code>。</li>
+      <li><b>打击乐</b>：MusicXML 的 <code>&lt;unpitched&gt;</code> 按 <code>midi-unpitched</code> 还原成 GM 鼓音高，不再被当成休止符丢弃；所有鼓轨另存为 <code>*_percussion.mid</code>，轨名如 <code>triangle1_NOAUDIO</code>，可直接导入 DAW / 鼓采样器。打击乐不进入哈基米人声音频合成。</li>
+      <li><b>工程参数复用</b>：每次生成自动保存 <code>*_params.json</code> 与 <code>*_params.zip</code>；左侧「工程参数复用」栏目可读取旧作品参数包，一键恢复全局设置、轨道语音 / 八度 / 音量、段落编曲与字幕样式。旧作品即使没有参数文件，也可从 manifest 恢复可复用部分。</li>
+      <li><b>段落差异</b>：自动段落计划会拉开马尔科夫比例与音源配比；相邻段落的随机比例不再都贴着 70%，可在「段落编曲」中逐段查看 / 手改。</li>
+      <li><b>长音处理</b>：时值拉伸只拉元音中段，辅音、音头和尾音保持原时值；长音用交叉淡化中段循环保持连贯，结尾自然释放。</li>
+      <li><b>绿幕字幕视频</b>：音频完成后额外生成一条 MP4，包含全部参与轨道的歌词槽。所有声部先合并成一条连续时间线，任何时刻最多显示 1 行，短句间尽量保持连续、减少闪断；超长句会自动缩小字号，仍保持单行。宽 1920，默认 8 号白色宋体 + 2px 轻微黑边（1 号≈10px，8 号≈80px），可在左侧「字幕视频样式」调整字号 / 字体 / 颜色；纯绿 #00FF00 背景、30 fps、不带音轨，可直接做 BB 素材抠像。视频生成失败不会影响音频与 SRT。</li>
+      <li><b>MusicXML 乐谱</b>：完整读取每个速度标记（含小节内变速），按谱面位置生成速度地图；读取 p / mf / f 等力度、cresc. / dim. 发夹、staccato / tenuto / accent / marcato / pizz. / tremolo，并合并跨小节连音线。</li>
+      <li><b>自动混音</b>：按乐器家族真实摆位（小提琴左、大提琴右、低音中央等），直达声相位对齐，按深度加入早期反射与自动电平；分轨与混音使用同一摆位。总线使用 <b>3.4:1 RMS 压缩</b>并自动补偿增益，弱段再向上压缩最多 +4.5dB：弱音不埋、强音不过冲，保留约 9~15dB 峰值因数，适合流媒体但不做流行乐式压扁。</li>
+      <li><b>实时字幕</b>：歌词一生成就推送，可边渲染边看；完成后自动下载 MP3 / ZIP / SRT / LRC，也可单独下载每条分轨。绿幕字幕视频在音频完成后生成，使用左侧设置的宽度 / 字号 / 字体 / 颜色标准；全部轨道合并为一条视频，每次最多 1 行。</li>
+      <li><b>输出清单</b>：ZIP 内的 <code>*_instrument_report.md / .csv / .json</code> 会列出输出乐器、未输出乐器、混音后分轨、混音前 FLAC、不良音符 / 补充 MIDI 的英文轨名与参数包文件名。</li>
+      <li><b>离线运行</b>：开源版不包含、也不调用任何大模型，不需要 API key；MIDI 解析、歌词生成与音频渲染全部在本机完成。</li>
+    </ol>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="/static/app.js?v=0.22.0"></script>
+</body>
+</html>
+
+
+
